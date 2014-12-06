@@ -18,4 +18,16 @@ struct _Client {
 
 typedef struct _Client Client;
 
+struct _ClientSet {
+    Client* clients;
+    size_t size;
+};
+
+typedef struct _ClientSet ClientSet;
+
+/* ClientSet functions */
+ClientSet* ClientSet_Create();
+void ClientSet_Destroy(ClientSet* set);
+void ClientSet_Add(ClientSet* set, Socket socket);
+
 #endif /* CLIENT_H */
