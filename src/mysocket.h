@@ -5,5 +5,6 @@
 
 typedef int Socket;
 typedef struct sockaddr SockAddr;
+typedef struct sockaddr_in SockAddrIn;
 
 #endif /* MYSOCKET_H */

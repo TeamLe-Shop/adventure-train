@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=
+CFLAGS=-Wunused-parameters
 SOURCES=src/*c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=gatchan
@@ -10,4 +10,5 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(EXECUTABLE)
 
 .c.o:
+	echo "Compiling "$<$" -> "$@
 	$(CC) $(CFLAGS) $< -o $@
