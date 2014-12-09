@@ -28,7 +28,7 @@ void NoticeBoard_Add(NoticeBoard* noticeboard, char* msg)
         noticeboard->size++;
     } else {
         for (i = 0; i < noticeboard->size - 1; i++) {
-            memset(noticeboard->board[i], 0, 128);
+            memset(noticeboard->board[i], 0, NOTICEBOARD_MAX_MSG_LEN);
             strcpy(noticeboard->board[i], noticeboard->board[i + 1]);
         }
     }
