@@ -22,14 +22,16 @@ void NoticeBoard_Add(NoticeBoard* noticeboard, char* msg)
      * How else will I do it?
      */
 
-    strcpy(noticeboard->entries[noticeboard->length], msg);
+    strncpy(noticeboard->entries[noticeboard->length], msg,
+            NOTICEBOARD_ENTRY_CAPACITY);
 
     if (noticeboard->length < NOTICEBOARD_CAPACITY) {
         noticeboard->length++;
     } else {
         for (i = 0; i < noticeboard->length - 1; i++) {
             memset(noticeboard->entries[i], 0, NOTICEBOARD_ENTRY_CAPACITY);
-            strcpy(noticeboard->entries[i], noticeboard->entries[i + 1]);
+            strncpy(noticeboard->entries[i], noticeboard->entries[i + 1],
+                    NOTICEBOARD_ENTRY_CAPACITY);
         }
     }
 }
