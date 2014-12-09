@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
