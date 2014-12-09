@@ -16,7 +16,7 @@ char* ipaddr(const SockAddrIn addr) {
     uint32_t host = ntohl(addr.sin_addr.s_addr);
     uint16_t port = ntohs(addr.sin_port);
     char* result = malloc(22);
-    sprintf(result, "{}.{}.{}.{}:{}", host >> 24 & 0xFF, host >> 16 & 0xFF,
+    sprintf(result, "%u.%u.%u.%u:%u", host >> 24 & 0xFF, host >> 16 & 0xFF,
              host >> 8 & 0xFF, host >> 0 & 0xFF, port);
     return result;
 }
