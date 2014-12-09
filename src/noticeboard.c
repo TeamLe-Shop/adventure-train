@@ -16,20 +16,16 @@ void NoticeBoard_Destroy(NoticeBoard* noticeboard)
 
 void NoticeBoard_Add(NoticeBoard* noticeboard, char* msg)
 {
-    int i;
-
-    /* This is really inefficient, isn't it?
-     * How else will I do it?
-     */
-
-    strcpy(noticeboard->entries[noticeboard->length], msg);
-
-    if (noticeboard->length < NOTICEBOARD_CAPACITY) {
-        noticeboard->length++;
+    if (noticeboard->length >= NOTICEBOARD_CAPACITY) {
+        // Shift all messages up
+        memmove(noticeboard->entries, noticeboard->entries + 1,
+                (NOTICEBOARD_CAPACITY - 1) * NOTICEBOARD_ENTRY_CAPACITY);
+        // Write to last
+        strncpy(noticeboard->entries[NOTICEBOARD_CAPACITY - 1], msg,
+                NOTICEBOARD_ENTRY_CAPACITY);
     } else {
-        for (i = 0; i < noticeboard->length - 1; i++) {
-            memset(noticeboard->entries[i], 0, NOTICEBOARD_ENTRY_CAPACITY);
-            strcpy(noticeboard->entries[i], noticeboard->entries[i + 1]);
-        }
+        strncpy(noticeboard->entries[noticeboard->length], msg,
+            NOTICEBOARD_ENTRY_CAPACITY);
+        noticeboard->length++;
     }
 }
