@@ -1,14 +1,14 @@
 #ifndef NOTICEBOARD_H
 #define NOTICEBOARD_H
 
-#define NOTICEBOARD_MAX_LEN 64
-#define NOTICEBOARD_MAX_MSG_LEN 128
+#define NOTICEBOARD_CAPACITY 64
+#define NOTICEBOARD_ENTRY_CAPACITY 128
 
 #include <stdlib.h>
 
 struct _NoticeBoard {
-    char board[NOTICEBOARD_MAX_LEN][NOTICEBOARD_MAX_MSG_LEN];
-    size_t size;
+    char entries[NOTICEBOARD_CAPACITY][NOTICEBOARD_ENTRY_CAPACITY];
+    size_t length;
 };
 
 typedef struct _NoticeBoard NoticeBoard;

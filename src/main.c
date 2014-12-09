@@ -145,10 +145,10 @@ void client_exec(Client client, NoticeBoard* board)
     if (starts(buffer, "read")) {
         char temp_buffer[512];
         Client_Send(client, "-----\n", 7);
-        for (int i = 0; i < board->size; i++) {
+        for (int i = 0; i < board->length; i++) {
 
             memset(temp_buffer, 0, 512);
-            snprintf(temp_buffer, 512, "%d: %s", i + 1, board->board[i]);
+            snprintf(temp_buffer, 512, "%d: %s", i + 1, board->entries[i]);
             Client_Send(client, temp_buffer, 512 - 6);
         }
         Client_Send(client, "-----\n", 7);
