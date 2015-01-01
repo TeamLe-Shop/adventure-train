@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <time.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -16,6 +17,7 @@
 #include "client.h"
 #include "noticeboard.h"
 #include "util.h"
+#include "commands.h"
 
 #define PORT 7777
 
@@ -32,8 +34,9 @@ void sig_handler(int signal);
 void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
                  NoticeBoard* noticeboard);
 
-/* Attempt to receive data from client. */
-void client_exec(Client client, NoticeBoard* noticeboard);
+/* Attempt to receive data from `client`. */
+void client_exec(Client* client, int i, ClientSet* set,
+                 NoticeBoard* noticeboard);
 
 void destroy(ClientSet* set, NoticeBoard* noticeboard);
 
@@ -45,7 +48,7 @@ int main(int argc, char* argv[])
 
     Socket server;
     SockAddrIn server_addr;
-    ClientSet* clients = ClientSet_Create();
+    ClientSet* clients = ClientSet_Create(8);
     NoticeBoard* board = NoticeBoard_Create();
 
     /* Attempt to create socket and report error if failed. */
@@ -58,6 +61,8 @@ int main(int argc, char* argv[])
     memset(&server_addr, 0, sizeof(server_addr));
 
     fcntl(server, F_SETFL, O_NONBLOCK);
+    int optval = 1;
+    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     /* Set port and attempt to bind. */
     server_addr.sin_family = AF_INET;
@@ -105,16 +110,20 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
             }
         } else {
             fcntl(new_socket, F_SETFL, O_NONBLOCK);
-            ClientSet_Add(clients, new_socket);
-
-            struct sockaddr peer_address;
+            Client* c = ClientSet_Add(clients, new_socket);
+            if (c == NULL) continue;
+            memset(c->properties.nick, 0, NICK_MAXLEN);
+            strcpy(c->properties.nick, "user");
+            SockAddr peer_address;
             socklen_t addrlen = sizeof(peer_address);
             int has_error = getpeername(new_socket, &peer_address,
                                 &addrlen);
             if (has_error == -1) {
                 error("Error getting peer name");
             }
-            struct sockaddr_in *addr_in = (struct sockaddr_in *)&peer_address;
+            SockAddrIn *addr_in = (struct sockaddr_in *)&peer_address;
+
+            printf("Client connected (%s)\n", ipaddr(*addr_in));
         }
 
         /* -- Reading data -- */
@@ -123,38 +132,44 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
                 close(clients->clients[i].socket);
                 continue;
             }
-            client_exec(clients->clients[i], board);
+            client_exec(&(clients->clients[i]), i, clients, board);
         }
     }
 }
 
-void client_exec(Client client, NoticeBoard* board)
+void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
 {
     char buffer[512];
-
     memset(buffer, 0, 512);
-    int bytes_recv = recv(client.socket, buffer, 511, 0);
-    if (bytes_recv == -1) {
-        if (errno != EAGAIN) {
-            error("Could not recv from client");
-            client.state = DISCONNECTED;
+    int bytes_recv = recv(client->socket, buffer, 511, 0);
+    if ((bytes_recv == 0) || (bytes_recv == -1 && errno != EAGAIN)) {
+        client->state = DISCONNECTED;
+        SockAddr peer_address;
+        socklen_t addrlen = sizeof(peer_address);
+        int has_error = getpeername(client->socket, &peer_address,
+                            &addrlen);
+        if (has_error == -1) {
+            error("Error getting peer name");
         }
-        return;
+        SockAddrIn* addr_in = (SockAddrIn*)&peer_address;
+        printf("Client disconnected (%s)\n", ipaddr(*addr_in));
+        //clients->size--;
+        //memmove(client, client + sizeof(Client),
+        //        *(clients->clients) - client);
     }
 
     if (starts(buffer, "read")) {
-        char temp_buffer[512];
-        Client_Send(client, "-----\n", 7);
-        for (int i = 0; i < board->length; i++) {
-
-            memset(temp_buffer, 0, 512);
-            snprintf(temp_buffer, 512, "%d: %s", i + 1, board->entries[i]);
-            Client_Send(client, temp_buffer, 512 - 6);
-        }
-        Client_Send(client, "-----\n", 7);
+        Command_Read(*client, clients, board);
     } else if (starts(buffer, "post")) {
-        buffer[5 + 134] = 0;
-        NoticeBoard_Add(board, buffer + 5);
+        Command_Post(*client, clients, board, buffer);
+    } else if (starts(buffer, "time")) {
+        Command_Time(*client);
+    } else if (starts(buffer, "online")) {
+        Command_Online(*client, clients);
+    } else if (starts(buffer, "nick")) {
+        Command_Nick(client, clients, buffer);
+    } else if (starts(buffer, "debug")) {
+        Command_Debug(client, clients);
     }
 }
 

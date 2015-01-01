@@ -6,7 +6,6 @@
 
 #include <netinet/in.h>
 
-
 void error(char* message)
 {
     fprintf(stderr, "%s: %s\n", message, strerror(errno));

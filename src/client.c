@@ -1,6 +1,8 @@
 #include "client.h"
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <sys/socket.h>
@@ -27,11 +29,12 @@ void Client_Send(Client client, char* buffer, size_t length)
 
 /* ClientSet functions */
 
-ClientSet* ClientSet_Create()
+ClientSet* ClientSet_Create(size_t max_clients)
 {
     ClientSet* set = malloc(sizeof(ClientSet));
     set->clients = NULL;
     set->size = 0;
+    set->max_clients = max_clients;
 
     return set;
 }
@@ -45,6 +48,7 @@ void ClientSet_Destroy(ClientSet* set)
      */
     if (set->clients != NULL) {
         for (i = 0; i < set->size; i++) {
+            printf("Closing socket...\n");
             close(set->clients[i].socket);
         }
         free(set->clients);
@@ -52,27 +56,52 @@ void ClientSet_Destroy(ClientSet* set)
     }
 }
 
-void ClientSet_Add(ClientSet* set, Socket socket)
+Client* ClientSet_Add(ClientSet* set, Socket socket)
 {
+    if (set->size >= set->max_clients) {
+        Client temp_client;
+        temp_client.socket = socket;
+        char* response = "Server full.\n";
+        Client_Send(temp_client, response, strlen(response));
+        close(socket);
+        return NULL;
+    }
     int i;
     int index = -1;
     for (i = 0; i < set->size; i++) {
         if (set->clients[i].state == DISCONNECTED) {
             index = i;
+            break;
         }
     }
 
     if (index == -1) {
+        set->size++;
+        if (set->size == 1) {
+            set->clients = malloc(sizeof (Client));
+        } else {
+            set->clients = realloc(set->clients, sizeof(Client) * set->size);
+        }
         index = set->size - 1;
     }
 
-    set->size++;
-    if (set->size == 1) {
-        set->clients = malloc(sizeof (Client));
-    } else {
-        set->clients = realloc(set->clients, sizeof(Client) * set->size);
+
+    set->clients[index].socket = socket;
+    set->clients[index].state = CONNECTED;
+
+    return &(set->clients[index]);
+}
+
+size_t ClientSet_Connected(ClientSet* set)
+{
+    size_t clients = 0;
+    size_t i;
+    for (i = 0; i < set->size; i++) {
+        if (set->clients[i].state == CONNECTED) {
+            clients++;
+        }
     }
-    set->clients[i].socket = socket;
-    set->clients[i].state = CONNECTED;
+
+    return clients;
 }
 

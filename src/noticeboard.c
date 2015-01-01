@@ -17,10 +17,10 @@ void NoticeBoard_Destroy(NoticeBoard* noticeboard)
 void NoticeBoard_Add(NoticeBoard* noticeboard, char* msg)
 {
     if (noticeboard->length >= NOTICEBOARD_CAPACITY) {
-        // Shift all messages up
+        /* Shift all messages up */
         memmove(noticeboard->entries, noticeboard->entries + 1,
                 (NOTICEBOARD_CAPACITY - 1) * NOTICEBOARD_ENTRY_CAPACITY);
-        // Write to last
+        /* Write to last */
         strncpy(noticeboard->entries[NOTICEBOARD_CAPACITY - 1], msg,
                 NOTICEBOARD_ENTRY_CAPACITY);
     } else {
