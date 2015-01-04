@@ -15,6 +15,7 @@ typedef enum _State State;
 
 struct _ClientProperties {
     char nick[NICK_MAXLEN + 1];
+    bool show_joins_exits;
 };
 
 typedef struct _ClientProperties ClientProperties;
@@ -54,5 +55,8 @@ Client* ClientSet_Add(ClientSet* set, Socket socket);
 
 /* Return the amount of clients connected in `set`. */
 size_t ClientSet_Connected(ClientSet* set);
+
+/* Returns the amount of memory used by `set`. */
+size_t ClientSet_MemoryUsage(ClientSet* set);
 
 #endif /* CLIENT_H */

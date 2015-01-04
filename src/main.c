@@ -109,11 +109,23 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
                 error("Could not accept connection");
             }
         } else {
+            int j = 0;
             fcntl(new_socket, F_SETFL, O_NONBLOCK);
             Client* c = ClientSet_Add(clients, new_socket);
             if (c == NULL) continue;
             memset(c->properties.nick, 0, NICK_MAXLEN);
             strcpy(c->properties.nick, "user");
+
+            for (i = 0; i < clients->size; i++) {
+                if (&clients->clients[i] == c) continue;
+                if (!strcmp(clients->clients[i].properties.nick,
+                    c->properties.nick)) {
+                    j++;
+                    sprintf(c->properties.nick, "user(%d)", j);
+                    i = 0;
+                }
+            }
+
             SockAddr peer_address;
             socklen_t addrlen = sizeof(peer_address);
             int has_error = getpeername(new_socket, &peer_address,
@@ -169,7 +181,9 @@ void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
     } else if (starts(buffer, "nick")) {
         Command_Nick(client, clients, buffer);
     } else if (starts(buffer, "debug")) {
-        Command_Debug(client, clients);
+        Command_Debug(client, clients, board);
+    } else if (starts(buffer, "help")) {
+        Command_Help(*client);
     }
 }
 

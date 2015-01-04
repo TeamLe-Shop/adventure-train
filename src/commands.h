@@ -10,6 +10,7 @@ void Command_Post(Client client, ClientSet* clients, NoticeBoard* board,
 void Command_Time(Client client);
 void Command_Online(Client client, ClientSet* clients);
 void Command_Nick(Client* client, ClientSet* clients, char* buffer);
-void Command_Debug(Client* client, ClientSet* clients);
+void Command_Debug(Client* client, ClientSet* clients, NoticeBoard* board);
+void Command_Help(Client client);
 
 #endif /* COMMANDS_H */

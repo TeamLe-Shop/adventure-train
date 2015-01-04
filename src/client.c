@@ -105,3 +105,15 @@ size_t ClientSet_Connected(ClientSet* set)
     return clients;
 }
 
+
+size_t ClientSet_MemoryUsage(ClientSet* set)
+{
+    if (set == NULL) {
+        return 0;
+    }
+
+    size_t total = 0;
+    total += sizeof(*set);
+    total += sizeof(Client) * set->size;
+    return total;
+}
