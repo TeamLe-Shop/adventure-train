@@ -98,6 +98,7 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
     }
 
     while (running) {
+        usleep(100000);
         /* -- Accepting connections -- */
         socklen_t sz = sizeof(server_addr);
         Socket new_socket = accept(server, (SockAddr*)&server_addr, &sz);

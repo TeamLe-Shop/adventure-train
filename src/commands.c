@@ -13,10 +13,11 @@
 
 void Command_Read(Client client, ClientSet* clients, NoticeBoard* board)
 {
+    int i;
     char temp_buffer[512];
     Client_Send(client, "-----\n", 7);
 
-    for (int i = 0; i < board->length; i++) {
+    for (i = 0; i < board->length; i++) {
         memset(temp_buffer, 0, 512);
         snprintf(temp_buffer, 512, "%d: %s", i + 1, board->entries[i]);
         Client_Send(client, temp_buffer, 512 - 6);
@@ -46,6 +47,7 @@ void Command_Time(Client client)
 
 void Command_Online(Client client, ClientSet* clients)
 {
+    int i;
     int buf_len = 65;
     char buf[buf_len];
 
@@ -55,7 +57,7 @@ void Command_Online(Client client, ClientSet* clients)
     sprintf(header, "----- (%zu / %zu) -----\n", ClientSet_Connected(clients),
             clients->max_clients);
     Client_Send(client, header, 100);
-    for (int i = 0; i < clients->size; i++) {
+    for (i = 0; i < clients->size; i++) {
         memset(buf, 0, buf_len);
         if (clients->clients[i].state == DISCONNECTED) {
             continue;
