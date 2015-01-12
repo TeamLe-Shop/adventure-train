@@ -10,6 +10,7 @@
 
 #include "util.h"
 #include "mysocket.h"
+#include "client.h"
 
 void Command_Read(Client client, ClientSet* clients, NoticeBoard* board)
 {
@@ -17,10 +18,22 @@ void Command_Read(Client client, ClientSet* clients, NoticeBoard* board)
     char temp_buffer[512];
     Client_Send(client, "-----\n", 7);
 
-    for (i = 0; i < board->length; i++) {
-        memset(temp_buffer, 0, 512);
-        snprintf(temp_buffer, 512, "%d: %s", i + 1, board->entries[i]);
-        Client_Send(client, temp_buffer, 512 - 6);
+    if (client.properties.noticeboard_order == OLDEST_FIRST) {
+        for (i = 0; i < board->length; i++) {
+            memset(temp_buffer, 0, 512);
+            snprintf(temp_buffer, 512, "%d - %s: %s", i + 1,
+                     board->entries[i].poster,
+                     board->entries[i].message);
+            Client_Send(client, temp_buffer, 512 - 6);
+        }
+    } else if (client.properties.noticeboard_order == NEWEST_FIRST) {
+        for (i = board->length - 1; i > -1; i--) {
+            memset(temp_buffer, 0, 512);
+            snprintf(temp_buffer, 512, "%d - %s: %s", i + 1,
+                     board->entries[i].poster,
+                     board->entries[i].message);
+            Client_Send(client, temp_buffer, 512 - 6);
+        }
     }
     Client_Send(client, "-----\n", 7);
 }
@@ -29,7 +42,7 @@ void Command_Post(Client client, ClientSet* clients, NoticeBoard* board,
                   char* buffer)
 {
     buffer[5 + 134] = 0;
-    NoticeBoard_Add(board, buffer + 5);
+    NoticeBoard_Add(board, client.properties.nick, buffer + 5);
     char* response = "Your post has been posted on the board.\n";
     Client_Send(client, response, strlen(response));
 }
@@ -48,7 +61,7 @@ void Command_Time(Client client)
 void Command_Online(Client client, ClientSet* clients)
 {
     int i;
-    int buf_len = 65;
+    int buf_len = 67;
     char buf[buf_len];
 
     buf[buf_len - 1] = 0;
@@ -70,15 +83,23 @@ void Command_Online(Client client, ClientSet* clients)
             error("Error getting peer name");
         }
         SockAddrIn *addr_in = (struct sockaddr_in *)&peer_address;
-        sprintf(buf, "%-21s  [%s]\n",
+        if (!strcmp(client.properties.nick,
+                    clients->clients[i].properties.nick)) {
+            sprintf(buf, "%-21s ** [%s]\n",
                 clients->clients[i].properties.nick,
                 ipaddr(*addr_in));
+        } else {
+            sprintf(buf, "%-21s    [%s]\n",
+                clients->clients[i].properties.nick,
+                ipaddr(*addr_in));
+        }
         Client_Send(client, buf, buf_len);
     }
 }
 
 void Command_Nick(Client* client, ClientSet* clients, char* buffer)
 {
+    int i;
     buffer[5 + NICK_MAXLEN] = 0;
     char* ptr = buffer + 5;
 
@@ -94,6 +115,17 @@ void Command_Nick(Client* client, ClientSet* clients, char* buffer)
 
         Client_Send(*client, "Nickname cannot be blank.\n", 26);
         return;
+    }
+
+    for (i = 0; i < clients->size; i++) {
+        if (clients->clients[i].state == DISCONNECTED) {
+            continue;
+        }
+
+        if (!strcmp(clients->clients[i].properties.nick, buffer + 5)) {
+            Client_Send(*client, "Nickname already in use.\n", 25);
+            return;
+        }
     }
 
     char response[256];

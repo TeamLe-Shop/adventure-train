@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include <stdio.h>
+
 NoticeBoard* NoticeBoard_Create()
 {
     NoticeBoard* noticeboard = malloc(sizeof(NoticeBoard));
@@ -14,18 +16,19 @@ void NoticeBoard_Destroy(NoticeBoard* noticeboard)
     free(noticeboard);
 }
 
-void NoticeBoard_Add(NoticeBoard* noticeboard, char* msg)
+void NoticeBoard_Add(NoticeBoard* noticeboard, char* poster, char* msg)
 {
+    msg[NOTICEBOARD_ENTRY_CAPACITY] = 0;
     if (noticeboard->length >= NOTICEBOARD_CAPACITY) {
         /* Shift all messages up */
-        memmove(noticeboard->entries, noticeboard->entries + 1,
-                (NOTICEBOARD_CAPACITY - 1) * NOTICEBOARD_ENTRY_CAPACITY);
+        memmove(&noticeboard->entries, &(noticeboard->entries[1]),
+            sizeof(noticeboard->entries) - sizeof(Entry));
         /* Write to last */
-        strncpy(noticeboard->entries[NOTICEBOARD_CAPACITY - 1], msg,
-                NOTICEBOARD_ENTRY_CAPACITY);
+        strcpy(noticeboard->entries[NOTICEBOARD_CAPACITY - 1].message, msg);
+        strcpy(noticeboard->entries[NOTICEBOARD_CAPACITY - 1].poster, poster);
     } else {
-        strncpy(noticeboard->entries[noticeboard->length], msg,
-            NOTICEBOARD_ENTRY_CAPACITY);
+        strcpy(noticeboard->entries[noticeboard->length].message, msg);
+        strcpy(noticeboard->entries[noticeboard->length].poster, poster);
         noticeboard->length++;
     }
 }

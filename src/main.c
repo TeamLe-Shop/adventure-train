@@ -40,6 +40,10 @@ void client_exec(Client* client, int i, ClientSet* set,
 
 void destroy(ClientSet* set, NoticeBoard* noticeboard);
 
+void disconnect(Client* client);
+
+void send_motd(Client* client);
+
 int main(int argc, char* argv[])
 {
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
@@ -137,6 +141,7 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
             SockAddrIn *addr_in = (struct sockaddr_in *)&peer_address;
 
             printf("Client connected (%s)\n", ipaddr(*addr_in));
+            send_motd(c);
         }
 
         /* -- Reading data -- */
@@ -154,22 +159,21 @@ void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
 {
     char buffer[512];
     memset(buffer, 0, 512);
+
+    if (difftime(time(NULL), client->last_recv) > 30 * 60) {
+        disconnect(client);
+        return;
+    }
+
     int bytes_recv = recv(client->socket, buffer, 511, 0);
     if ((bytes_recv == 0) || (bytes_recv == -1 && errno != EAGAIN)) {
-        client->state = DISCONNECTED;
-        SockAddr peer_address;
-        socklen_t addrlen = sizeof(peer_address);
-        int has_error = getpeername(client->socket, &peer_address,
-                            &addrlen);
-        if (has_error == -1) {
-            error("Error getting peer name");
-        }
-        SockAddrIn* addr_in = (SockAddrIn*)&peer_address;
-        printf("Client disconnected (%s)\n", ipaddr(*addr_in));
+        disconnect(client);
         //clients->size--;
         //memmove(client, client + sizeof(Client),
         //        *(clients->clients) - client);
     }
+
+    client->last_recv = time(NULL);
 
     if (starts(buffer, "read")) {
         Command_Read(*client, clients, board);
@@ -200,4 +204,32 @@ void sig_handler(int signal)
     if (signal == SIGINT) {
         running = false;
     }
+}
+
+void disconnect(Client* client)
+{
+    client->state = DISCONNECTED;
+    SockAddr peer_address;
+    socklen_t addrlen = sizeof(peer_address);
+    int has_error = getpeername(client->socket, &peer_address,
+                        &addrlen);
+    if (has_error == -1) {
+        error("Error getting peer name");
+    }
+    SockAddrIn* addr_in = (SockAddrIn*)&peer_address;
+    printf("Client disconnected (%s)\n", ipaddr(*addr_in));
+}
+
+void send_motd(Client* client)
+{
+    char motd[1024];
+    memset(motd, 0, 1024);
+    strcpy(motd,
+    "====== MOTD ======\n"
+    "Welcome to the notice boards!\n"
+    "Enjoy your stay! :-)\n\n"
+    "You will automatically disconnect after 30 minutes.\n"
+    "==================\n");
+
+    Client_Send(*client, motd, 1024);
 }

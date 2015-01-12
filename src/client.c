@@ -88,6 +88,7 @@ Client* ClientSet_Add(ClientSet* set, Socket socket)
 
     set->clients[index].socket = socket;
     set->clients[index].state = CONNECTED;
+    set->clients[index].last_recv = time(NULL);
 
     return &(set->clients[index]);
 }
