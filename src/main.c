@@ -159,8 +159,8 @@ void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
 {
     char buffer[512];
     memset(buffer, 0, 512);
-
     if (difftime(time(NULL), client->last_recv) > 30 * 60) {
+        printf("Client timed out.\n");
         disconnect(client);
         return;
     }
@@ -173,7 +173,9 @@ void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
         //        *(clients->clients) - client);
     }
 
-    client->last_recv = time(NULL);
+    if (bytes_recv != -1) {
+        client->last_recv = time(NULL);
+    }
 
     if (starts(buffer, "read")) {
         Command_Read(*client, clients, board);
@@ -228,7 +230,7 @@ void send_motd(Client* client)
     "====== MOTD ======\n"
     "Welcome to the notice boards!\n"
     "Enjoy your stay! :-)\n\n"
-    "You will automatically disconnect after 30 minutes.\n"
+    "You will automatically disconnect after 30 minutes of inactivity.\n"
     "==================\n");
 
     Client_Send(*client, motd, 1024);
