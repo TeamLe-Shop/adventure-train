@@ -122,7 +122,8 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
             strcpy(c->properties.nick, "user");
 
             for (i = 0; i < clients->size; i++) {
-                if (&clients->clients[i] == c) continue;
+                if (&clients->clients[i] == c ||
+                    &clients->clients[i].state == DISCONNECTED) continue;
                 if (!strcmp(clients->clients[i].properties.nick,
                     c->properties.nick)) {
                     j++;
