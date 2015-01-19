@@ -123,7 +123,7 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
 
             for (i = 0; i < clients->size; i++) {
                 if (&clients->clients[i] == c ||
-                    &clients->clients[i].state == DISCONNECTED) continue;
+                    clients->clients[i].state == DISCONNECTED) continue;
                 if (!strcmp(clients->clients[i].properties.nick,
                     c->properties.nick)) {
                     j++;
