@@ -1,6 +1,7 @@
 #include "client.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -27,6 +28,17 @@ void Client_Send(Client client, char* buffer, size_t length)
     }
 }
 
+void Client_Destroy(Client* client)
+{
+    client->state = DISCONNECTED;
+    if (client->destroyed) {
+        return;
+    }
+    free(client->ip_string);
+    close(client->socket);
+    client->destroyed = true;
+}
+
 /* ClientSet functions */
 
 ClientSet* ClientSet_Create(size_t max_clients)
@@ -48,8 +60,7 @@ void ClientSet_Destroy(ClientSet* set)
      */
     if (set->clients != NULL) {
         for (i = 0; i < set->size; i++) {
-            printf("Closing socket...\n");
-            close(set->clients[i].socket);
+            Client_Destroy(&set->clients[i]);
         }
         free(set->clients);
         free(set);

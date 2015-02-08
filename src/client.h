@@ -24,6 +24,7 @@ enum _NBOrder;
 
 typedef enum _NBOrder NBOrder;
 
+/* The state of a client. */
 enum _State {
     DISCONNECTED, CONNECTED
 };
@@ -46,6 +47,8 @@ struct _Client {
     Socket socket;
     State state;
     time_t last_recv;
+    char* ip_string;
+    bool destroyed;
     ClientProperties properties;
 };
 
@@ -57,7 +60,11 @@ struct _ClientSet {
 
 /* Client functions */
 
+/* Send `length` bytes from string `buffer` to `client`. */
 void Client_Send(Client client, char* buffer, size_t length);
+
+/* Destroy `client` by freeing allocated memory and closing socket. */
+void Client_Destroy(Client* client);
 
 struct _ClientSet;
 

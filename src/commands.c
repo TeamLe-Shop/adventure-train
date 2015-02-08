@@ -61,39 +61,38 @@ void Command_Time(Client client)
 void Command_Online(Client client, ClientSet* clients)
 {
     int i;
-    int buf_len = 67;
-    char buf[buf_len];
+    char buf[100];
 
-    buf[buf_len - 1] = 0;
     char header[100];
     memset(header, 0, 100);
+
     sprintf(header, "----- (%zu / %zu) -----\n", ClientSet_Connected(clients),
             clients->max_clients);
     Client_Send(client, header, 100);
+    memset(header, 0, 100);
+    sprintf(header, "%-21s      %-22s %-6s\n", "NICK", "ADDR", "IDLE");
+    Client_Send(client, header, 100);
     for (i = 0; i < clients->size; i++) {
-        memset(buf, 0, buf_len);
+        memset(buf, 0, 100);
+
         if (clients->clients[i].state == DISCONNECTED) {
             continue;
         }
-        SockAddr peer_address;
-        socklen_t addrlen = sizeof(peer_address);
-        int has_error = getpeername(clients->clients[i].socket, &peer_address,
-                            &addrlen);
-        if (has_error == -1) {
-            error("Error getting peer name");
-        }
-        SockAddrIn *addr_in = (struct sockaddr_in *)&peer_address;
+        char idle[7];
+        strtimediff(idle, clients->clients[i].last_recv);
         if (!strcmp(client.properties.nick,
                     clients->clients[i].properties.nick)) {
-            sprintf(buf, "%-21s ** [%s]\n",
+            sprintf(buf, "%-21s  **  %-22s %s\n",
                 clients->clients[i].properties.nick,
-                ipaddr(*addr_in));
+                clients->clients[i].ip_string,
+                idle);
         } else {
-            sprintf(buf, "%-21s    [%s]\n",
+            sprintf(buf, "%-21s      %-22s %s\n",
                 clients->clients[i].properties.nick,
-                ipaddr(*addr_in));
+                clients->clients[i].ip_string,
+                idle);
         }
-        Client_Send(client, buf, buf_len);
+        Client_Send(client, buf, 100);
     }
 }
 
@@ -163,7 +162,7 @@ void Command_Debug(Client* client, ClientSet* clients, NoticeBoard* board)
 
 void Command_Help(Client client)
 {
-    char response[1024] = {0};
+    char response[2048] = {0};
     strcat(response, "help:   Show this help dialog\n");
     strcat(response, "read:   Read all messages on the noticeboard\n");
     strcat(response, "post:   Post a message onto the noticeboard\n");
@@ -171,5 +170,6 @@ void Command_Help(Client client)
     strcat(response, "debug:  Show memory usage information\n");
     strcat(response, "nick:   Change nickname\n");
     strcat(response, "online: See who's online\n");
+    strcat(response, "motd:   View the Message of the Day\n");
     Client_Send(client, response, 1024);
 }

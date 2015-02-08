@@ -140,15 +140,16 @@ void server_exec(Socket server, SockAddrIn server_addr, ClientSet* clients,
                 error("Error getting peer name");
             }
             SockAddrIn *addr_in = (struct sockaddr_in *)&peer_address;
+            c->ip_string = ipaddr(*addr_in);
 
-            printf("Client connected (%s)\n", ipaddr(*addr_in));
+            printf("Client connected (%s)\n", c->ip_string);
             send_motd(c);
         }
 
         /* -- Reading data -- */
         for (i = 0; i < clients->size; i++) {
             if (clients->clients[i].state == DISCONNECTED) {
-                close(clients->clients[i].socket);
+                Client_Destroy(&clients->clients[i]);
                 continue;
             }
             client_exec(&(clients->clients[i]), i, clients, board);
@@ -161,7 +162,6 @@ void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
     char buffer[512];
     memset(buffer, 0, 512);
     if (difftime(time(NULL), client->last_recv) > 30 * 60) {
-        printf("Client timed out.\n");
         disconnect(client);
         return;
     }
@@ -192,6 +192,8 @@ void client_exec(Client* client, int i, ClientSet* clients, NoticeBoard* board)
         Command_Debug(client, clients, board);
     } else if (starts(buffer, "help")) {
         Command_Help(*client);
+    } else if (starts(buffer, "motd")) {
+        send_motd(client);
     }
 }
 
@@ -211,16 +213,8 @@ void sig_handler(int signal)
 
 void disconnect(Client* client)
 {
-    client->state = DISCONNECTED;
-    SockAddr peer_address;
-    socklen_t addrlen = sizeof(peer_address);
-    int has_error = getpeername(client->socket, &peer_address,
-                        &addrlen);
-    if (has_error == -1) {
-        error("Error getting peer name");
-    }
-    SockAddrIn* addr_in = (SockAddrIn*)&peer_address;
-    printf("Client disconnected (%s)\n", ipaddr(*addr_in));
+    printf("Client disconnected (%s)\n", client->ip_string);
+    Client_Destroy(client);
 }
 
 void send_motd(Client* client)
